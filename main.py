@@ -1,8 +1,18 @@
 import seaborn as sns
-import numpy as np
+import pandas as pandas
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn import metrics
 from consoleOperations import create_line_break
 from fileOperations import get_csv
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold
+from sklearn.metrics import roc_auc_score
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+
 normalTransactions = get_csv().loc[get_csv()['Class'] == 0]
 fraudTransactions = get_csv().loc[get_csv()['Class'] == 1]
 print('Veri setindeki sütunlar:', get_csv().shape[1], 'adet sütun bulunmaktadır. Bunlar isimleri ve veri tipleri ile beraber aşağıda listelenmiştir.')
@@ -59,9 +69,11 @@ create_line_break()
 print('Veri setindeki dolandırıcılık işlemlerinin istatistiksel incelenmesi:\n', fraudTransactions.describe())
 create_line_break()
 print('Veri setindeki normal işlemlerin istatistiksel incelenmesi:\n', normalTransactions.describe())
+
 figured, graph = plt.subplots(ncols=2, figsize=(12,6))
 snsplot = sns.boxplot(ax = graph[0], x="Class", y="Amount", hue="Class",data=get_csv(), palette="Set3",showfliers=True)
 snsplot = sns.boxplot(ax = graph[1], x="Class", y="Amount", hue="Class",data=get_csv(), palette="Set3",showfliers=False)
+
 plt.show()
 corr = get_csv().corr(method='pearson')
 df_lt = corr.where(np.tril(np.ones(corr.shape)).astype(np.bool))
@@ -80,11 +92,37 @@ sns.set_style('whitegrid')
 plt.figure()
 figured, graph = plt.subplots(8,4,figsize=(16,28))
 
-for i,feature in enumerate(get_csv().columns.values):
+for i, column in enumerate(get_csv().columns.values):
     plt.subplot(8,4,i+1)
-    sns.kdeplot(normalTransactions[feature], bw=0.5,label="Class = 0")
-    sns.kdeplot(fraudTransactions[feature], bw=0.5,label="Class = 1")
-    plt.xlabel(feature, fontsize=12)
-    locs, labels = plt.xticks()
-    plt.tick_params(axis='both', which='major', labelsize=12)
-plt.show();
+    sns.kdeplot(normalTransactions[column], bw=0.5,label="Class = 0")
+    sns.kdeplot(fraudTransactions[column], bw=0.5,label="Class = 1")
+    plt.xlabel(column, fontsize=14)
+    _, labels = plt.xticks()
+    plt.tick_params(axis='both', which='major', labelsize=14)
+plt.show()
+
+predictors_names=['Time', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10',\
+       'V11', 'V12', 'V13', 'V14', 'V15', 'V16', 'V17', 'V18', 'V19',\
+       'V20', 'V21', 'V22', 'V23', 'V24', 'V25', 'V26', 'V27', 'V28',\
+       'Amount']
+target_name= 'Class'
+predictors = get_csv()[predictors_names]
+target = get_csv()[target_name]
+
+x_train, x_test, y_train, y_test = train_test_split(predictors, target, test_size=0.40, random_state=0)
+models = [  ('Naive Bayes', GaussianNB()),
+            ('Decision Tree (CART)', DecisionTreeClassifier()), ('K-NN', KNeighborsClassifier()),
+            ('RandomForestClassifier', RandomForestClassifier(n_jobs=8,
+                             criterion='entropy',
+                             verbose=False))]
+
+for name, model in models:
+    k = model.fit(x_train, y_train)
+    y_pred = k.predict(x_test)
+    print("%s -> Hassasiyet: %%%.2f" % (name, metrics.accuracy_score(y_test, y_pred) * 100))
+    if name=='RandomForestClassifier':
+        plt.figure(figsize=(7, 4))
+        plt.title('Niteliklerin Onemi', fontsize=14)
+        s = sns.barplot(x='nitelik', y='niteliklerinonemi', data=pandas.DataFrame({'nitelik': predictors_names, 'niteliklerinonemi': model.feature_importances_}))
+        s.set_xticklabels(s.get_xticklabels(), rotation=90)
+        plt.show()
