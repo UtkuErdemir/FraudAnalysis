@@ -40,6 +40,7 @@ create_line_break()
 classTypes = [0, 1]
 classNames = ["Normal", "Dolandırıclık"]
 classResults = [len(normalTransactions), len(fraudTransactions)]
+
 plt.bar(classTypes, classResults, color='purple')
 plt.xlabel("Yapılan İşlemler")
 plt.ylabel("İşlem Sayısı")
@@ -94,8 +95,8 @@ figured, graph = plt.subplots(8,4,figsize=(16,28))
 
 for i, column in enumerate(get_csv().columns.values):
     plt.subplot(8,4,i+1)
-    sns.kdeplot(normalTransactions[column], bw=0.5,label="Class = 0")
-    sns.kdeplot(fraudTransactions[column], bw=0.5,label="Class = 1")
+    sns.kdeplot(normalTransactions[column],  color="yellow", bw=0.7,label="Normal İşlem")
+    sns.kdeplot(fraudTransactions[column], bw=0.7, color="magenta",label="Dolandırıcılık İşlemi")
     plt.xlabel(column, fontsize=14)
     _, labels = plt.xticks()
     plt.tick_params(axis='both', which='major', labelsize=14)
